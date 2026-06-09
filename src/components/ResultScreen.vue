@@ -1,120 +1,191 @@
 <script setup>
 const props = defineProps({
-  score: {
-    type: Number,
-    required: true,
-  },
-  time: {
-    type: Number,
-    required: true,
-  },
-  won: {
-    type: Boolean,
-    required: true,
-  },
+  score: { type: Number, required: true },
+  time:  { type: Number, required: true },
+  won:   { type: Boolean, required: true },
 })
-
 const emit = defineEmits(['restart'])
 </script>
 
 <template>
   <div class="screen result-screen">
-    <div class="result-content">
-      <div class="result-icon">{{ won ? '🏆' : '⏰' }}</div>
+    <div class="terminal-window">
 
-      <h1 class="result-title" :class="won ? 'win' : 'lose'">
-        {{ won ? '¡Lo lograste!' : '¡Se acabó el tiempo!' }}
-      </h1>
-
-      <p class="result-message">
-        {{ won ? `Completaste la memoria en ${time}s` : 'No alcanzó el tiempo. ¡Inténtalo de nuevo!' }}
-      </p>
-
-      <div class="result-stats">
-        <div class="stat-card">
-          <span class="stat-value">{{ score }}</span>
-          <span class="stat-label">Puntos</span>
-        </div>
-        <div class="stat-card" v-if="won">
-          <span class="stat-value">{{ time }}s</span>
-          <span class="stat-label">Tiempo</span>
-        </div>
+      <!-- Window chrome -->
+      <div class="titlebar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="titlebar-name">resultado.log</span>
       </div>
 
-      <button class="btn btn-primary" @click="emit('restart')">Jugar de nuevo</button>
+      <div class="result-content">
+
+        <!-- Status pill -->
+        <div class="status-pill" :class="won ? 'pill-ok' : 'pill-err'">
+          {{ won ? '[SUCCESS]' : '[ERROR]' }}
+        </div>
+
+        <!-- Heading — solid color + text-shadow glow, no background-clip -->
+        <h1 class="result-title" :class="won ? 'title-win' : 'title-lose'">
+          {{ won ? '¡Lo lograste!' : '¡Se acabó el tiempo!' }}
+        </h1>
+
+        <!-- Terminal output block -->
+        <div class="output-block">
+          <p class="out-line">
+            <span class="out-key">exit_code</span>
+            <span class="out-op">:</span>
+            <span :class="won ? 'out-ok' : 'out-err'">{{ won ? '0 (OK)' : '1 (TIMEOUT)' }}</span>
+          </p>
+          <p class="out-line" v-if="won">
+            <span class="out-key">tiempo&nbsp;&nbsp;&nbsp;</span>
+            <span class="out-op">:</span>
+            <span class="out-val">{{ time }}s</span>
+          </p>
+          <p class="out-line">
+            <span class="out-key">puntos&nbsp;&nbsp;&nbsp;</span>
+            <span class="out-op">:</span>
+            <span class="out-val">{{ score }}</span>
+          </p>
+        </div>
+
+        <button class="btn btn-primary result-btn" @click="emit('restart')">
+          <span class="prompt-green">$</span> run ./juego --restart
+        </button>
+
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.result-screen {
-  background: var(--color-bg);
+.result-screen { background: transparent; }
+
+/* ── Terminal window ──────────────────────────── */
+.terminal-window {
+  max-width: 460px;
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(122, 162, 247, 0.08),
+    0 0 60px rgba(122, 162, 247, 0.1),
+    var(--shadow-card);
 }
 
+/* ── Titlebar ──────────────────────────────────── */
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-red    { background: #f7768e; }
+.dot-yellow { background: #e0af68; }
+.dot-green  { background: #9ece6a; }
+
+.titlebar-name {
+  flex: 1;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* ── Content ───────────────────────────────────── */
 .result-content {
-  max-width: 420px;
-  width: 100%;
+  padding: 2rem 2rem 2.25rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
-}
-
-.result-icon {
-  font-size: 4rem;
-  line-height: 1;
-}
-
-.result-title {
-  font-size: clamp(2rem, 6vw, 3rem);
-  font-weight: 800;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.result-title.win {
-  background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
-  filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.4));
-}
-
-.result-title.lose {
-  background: linear-gradient(135deg, var(--color-error), #f97316);
-}
-
-.result-message {
-  color: var(--color-text-muted);
-  font-size: 1.05rem;
+  gap: 1.25rem;
   text-align: center;
 }
 
-.result-stats {
-  display: flex;
-  gap: 1.5rem;
+/* ── Status pill ────────────────────────────────── */
+.status-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 0.28rem 0.85rem;
+  border-radius: var(--radius-sm);
 }
 
-.stat-card {
-  background: var(--color-surface);
+.pill-ok {
+  background: rgba(158, 206, 106, 0.15);
+  color: var(--color-success);
+  border: 1px solid rgba(158, 206, 106, 0.35);
+}
+
+.pill-err {
+  background: rgba(247, 118, 142, 0.15);
+  color: var(--color-error);
+  border: 1px solid rgba(247, 118, 142, 0.35);
+}
+
+/* ── Title: solid colour + glow (no background-clip) ── */
+.result-title {
+  font-size: clamp(1.75rem, 6vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  /* No transparent fill, no background-clip — just solid colour */
+}
+
+.title-win {
+  color: var(--color-success);
+  text-shadow:
+    0 0 18px rgba(158, 206, 106, 0.65),
+    0 0 42px rgba(158, 206, 106, 0.25);
+}
+
+.title-lose {
+  color: var(--color-error);
+  text-shadow:
+    0 0 18px rgba(247, 118, 142, 0.65),
+    0 0 42px rgba(247, 118, 142, 0.25);
+}
+
+/* ── Output block ───────────────────────────────── */
+.output-block {
+  width: 100%;
+  background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 1rem 1.75rem;
+  padding: 0.9rem 1.25rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  min-width: 110px;
+  gap: 0.45rem;
+  text-align: left;
 }
 
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-accent);
+.out-line {
+  display: flex;
+  gap: 0.55rem;
+  font-size: 0.875rem;
+  align-items: baseline;
 }
 
-.stat-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-muted);
-}
+.out-key { color: var(--color-primary); white-space: pre; }
+.out-op  { color: var(--color-text-muted); }
+.out-val { color: var(--color-warn); font-weight: 600; }
+.out-ok  { color: var(--color-success); font-weight: 600; }
+.out-err { color: var(--color-error);   font-weight: 600; }
+
+/* ── Button ─────────────────────────────────────── */
+.result-btn { font-size: 0.92rem; padding: 0.7rem 2rem; }
+
+.prompt-green { color: var(--color-success); }
 </style>
