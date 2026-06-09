@@ -1,0 +1,51 @@
+{
+  "gameTitle": "Juego de Memoria",
+  "description": "Encuentra todos los pares antes de que se acabe el tiempo",
+  "pairs": [
+    {
+      "id": 1,
+      "image": "/images/card-1.jpg",
+      "audio": "/audio/card-1.mp3",
+      "label": "Elemento 1"
+    },
+    {
+      "id": 2,
+      "image": "/images/card-2.jpg",
+      "audio": "/audio/card-2.mp3",
+      "label": "Elemento 2"
+    },
+    {
+      "id": 3,
+      "image": "/images/card-3.jpg",
+      "audio": "/audio/card-3.mp3",
+      "label": "Elemento 3"
+    },
+    {
+      "id": 4,
+      "image": "/images/card-4.jpg",
+      "audio": "/audio/card-4.mp3",
+      "label": "Elemento 4"
+    },
+    {
+      "id": 5,
+      "image": "/images/card-5.jpg",
+      "audio": "/audio/card-5.mp3",
+      "label": "Elemento 5"
+    },
+    {
+      "id": 6,
+      "image": "/images/card-6.jpg",
+      "audio": "/audio/card-6.mp3",
+      "label": "Elemento 6"
+    }
+  ],
+  "sounds": {
+    "correct": "/audio/correct.mp3",
+    "error": "/audio/error.mp3",
+    "cardflip": "/audio/cardflip.mp3",
+    "points": "/audio/points.mp3",
+    "timer": "/audio/timer.mp3",
+    "timeup": "/audio/timeup.mp3",
+    "winning": "/audio/winning.mp3"
+  }
+}

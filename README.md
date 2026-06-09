@@ -1,44 +1,66 @@
-# proyecto_personal
+# Juego de Memoria — IF7102 Multimedios
 
-This template should help get you started developing with Vue 3 in Vite.
+Proyecto Personal · UCR Sede Guanacaste · I Ciclo 2026
 
-## Recommended IDE Setup
+**Framework:** Vue 3 + Vite  
+**Opción:** 5 — Juego Educativo de Un Nivel  
+**Tipo:** Juego de memoria con pares imagen-audio
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+---
 
-## Recommended Browser Setup
+## Descripción
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+_[Describir brevemente el tema del juego aquí]_
 
-## Customize configuration
+---
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## Capturas de pantalla
 
-## Project Setup
+_[Agregar capturas de las tres pantallas: inicio, juego y resultado]_
+
+---
+
+## Instalación y ejecución
 
 ```sh
 pnpm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 pnpm dev
 ```
 
-### Compile and Minify for Production
+El proyecto corre en `http://localhost:5173` por defecto.
 
-```sh
-pnpm build
+---
+
+## Estructura del proyecto
+
+```
+src/
+├── assets/
+│   └── main.css            # Variables CSS y estilos globales
+├── components/
+│   ├── StartScreen.vue     # Pantalla de inicio
+│   ├── GameBoard.vue       # Tablero del juego con temporizador
+│   ├── MemoryCard.vue      # Carta individual (reutilizable)
+│   ├── ResultScreen.vue    # Pantalla de resultados
+│   └── AudioPlayer.vue     # Reproductor de audio (reutilizable)
+├── App.vue                 # Raíz: maneja estado global y navegación entre pantallas
+└── main.js                 # Entrada de la app
+
+public/
+├── data/
+│   └── cards.json          # Datos del juego (cargados con fetch)
+├── audio/                  # Efectos de sonido (.mp3)
+└── images/                 # Imágenes de las cartas
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+---
 
-```sh
-pnpm test:unit
-```
+## Medios incluidos
+
+| Archivo | Descripción | Licencia |
+|---|---|---|
+| _Por completar_ | | |
+
+---
+
+Estudiante: Aaron Salazar Mata
