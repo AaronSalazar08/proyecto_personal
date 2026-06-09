@@ -9,20 +9,23 @@ import ResultScreen from './components/ResultScreen.vue'
 const currentScreen = ref('start')
 const finalScore = ref(0)
 const finalTime = ref(0)
+const finalWon = ref(false)
 
 function onStart() {
   currentScreen.value = 'game'
 }
 
-function onEndGame(score, time) {
+function onEndGame(score, time, won) {
   finalScore.value = score
   finalTime.value = time
+  finalWon.value = won
   currentScreen.value = 'result'
 }
 
 function onRestart() {
   finalScore.value = 0
   finalTime.value = 0
+  finalWon.value = false
   currentScreen.value = 'start'
 }
 </script>
@@ -45,6 +48,7 @@ function onRestart() {
       v-else-if="currentScreen === 'result'"
       :score="finalScore"
       :time="finalTime"
+      :won="finalWon"
       @restart="onRestart"
     />
   </div>

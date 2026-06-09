@@ -1,6 +1,4 @@
 <script setup>
-import { computed } from 'vue'
-
 const props = defineProps({
   score: {
     type: Number,
@@ -10,37 +8,35 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  won: {
+    type: Boolean,
+    required: true,
+  },
 })
 
 const emit = defineEmits(['restart'])
-
-const formattedTime = computed(() => {
-  const m = Math.floor(props.time / 60).toString().padStart(2, '0')
-  const s = (props.time % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
-})
-
-const performanceMessage = computed(() => {
-  if (props.time < 60) return '¡Increíble! Eres un experto.'
-  if (props.time < 120) return '¡Muy bien! Gran memoria.'
-  return '¡Lo lograste! Sigue practicando.'
-})
 </script>
 
 <template>
   <div class="screen result-screen">
     <div class="result-content">
-      <div class="result-icon">🏆</div>
-      <h1 class="result-title">¡Completado!</h1>
-      <p class="result-message">{{ performanceMessage }}</p>
+      <div class="result-icon">{{ won ? '🏆' : '⏰' }}</div>
+
+      <h1 class="result-title" :class="won ? 'win' : 'lose'">
+        {{ won ? '¡Lo lograste!' : '¡Se acabó el tiempo!' }}
+      </h1>
+
+      <p class="result-message">
+        {{ won ? `Completaste la memoria en ${time}s` : 'No alcanzó el tiempo. ¡Inténtalo de nuevo!' }}
+      </p>
 
       <div class="result-stats">
         <div class="stat-card">
           <span class="stat-value">{{ score }}</span>
           <span class="stat-label">Puntos</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-value">{{ formattedTime }}</span>
+        <div class="stat-card" v-if="won">
+          <span class="stat-value">{{ time }}s</span>
           <span class="stat-label">Tiempo</span>
         </div>
       </div>
@@ -67,21 +63,29 @@ const performanceMessage = computed(() => {
 .result-icon {
   font-size: 4rem;
   line-height: 1;
-  filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.5));
 }
 
 .result-title {
   font-size: clamp(2rem, 6vw, 3rem);
   font-weight: 800;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+.result-title.win {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
+  filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.4));
+}
+
+.result-title.lose {
+  background: linear-gradient(135deg, var(--color-error), #f97316);
+}
+
 .result-message {
   color: var(--color-text-muted);
   font-size: 1.05rem;
+  text-align: center;
 }
 
 .result-stats {
