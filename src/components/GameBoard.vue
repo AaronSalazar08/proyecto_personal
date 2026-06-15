@@ -11,7 +11,7 @@ const flippedCards = ref([])
 const matchedPairs = ref(0)
 const totalPairs = ref(0)
 const score = ref(0)
-const timeLeft = ref(30)
+const timeLeft = ref(60)
 const isChecking = ref(false)
 const isLoading = ref(true)
 
@@ -23,10 +23,18 @@ const audioTimeup = ref(null)
 const audioWinning = ref(null)
 const audioCardflip = ref(null)
 const audioPoints = ref(null)
-const soundPaths = ref({ correct: '', error: '', timer: '', timeup: '', winning: '', cardflip: '', points: '' })
+const soundPaths = ref({
+  correct: '',
+  error: '',
+  timer: '',
+  timeup: '',
+  winning: '',
+  cardflip: '',
+  points: '',
+})
 
 // ── Timer ──────────────────────────────────────────────────────
-const TOTAL_TIME = 30
+const TOTAL_TIME = 60
 let timerInterval = null
 
 function startTimer() {
@@ -42,8 +50,9 @@ function startTimer() {
 }
 
 const formattedTime = computed(() => {
-  const s = timeLeft.value.toString().padStart(2, '0')
-  return `0:${s}`
+  const m = Math.floor(timeLeft.value / 60)
+  const s = (timeLeft.value % 60).toString().padStart(2, '0')
+  return `${m}:${s}`
 })
 
 const isUrgent = computed(() => timeLeft.value <= 10)
@@ -54,8 +63,9 @@ onMounted(async () => {
     const res = await fetch('/data/cards.json')
     const data = await res.json()
     soundPaths.value = data.sounds
-    totalPairs.value = data.pairs.length
-    cards.value = shuffleCards(buildCardPairs(data.pairs))
+    const selected = selectRandomPairs(data.pool, 12)
+    totalPairs.value = selected.length
+    cards.value = shuffleCards(buildCardPairs(selected))
   } finally {
     isLoading.value = false
     startTimer()
@@ -85,6 +95,10 @@ function shuffleCards(arr) {
     ;[copy[i], copy[j]] = [copy[j], copy[i]]
   }
   return copy
+}
+
+function selectRandomPairs(pool, count) {
+  return shuffleCards(pool).slice(0, count)
 }
 
 function onCardFlip(card) {
@@ -141,16 +155,21 @@ function checkForMatch() {
     <!-- HUD -->
     <header class="hud">
       <div class="hud-item">
-        <span class="hud-label">Tiempo</span>
-        <span class="hud-value" :class="{ urgent: isUrgent }">{{ formattedTime }}</span>
+        <span class="hud-key">tiempo</span>
+        <span class="hud-op">=</span>
+        <span class="hud-val" :class="{ urgent: isUrgent }">{{ formattedTime }}</span>
       </div>
+      <span class="hud-sep">//</span>
       <div class="hud-item">
-        <span class="hud-label">Pares</span>
-        <span class="hud-value">{{ matchedPairs }} / {{ totalPairs }}</span>
+        <span class="hud-key">pares</span>
+        <span class="hud-op">=</span>
+        <span class="hud-val">{{ matchedPairs }}/{{ totalPairs }}</span>
       </div>
+      <span class="hud-sep">//</span>
       <div class="hud-item">
-        <span class="hud-label">Puntos</span>
-        <span class="hud-value">{{ score }}</span>
+        <span class="hud-key">score</span>
+        <span class="hud-op">=</span>
+        <span class="hud-val">{{ score }}</span>
       </div>
     </header>
 
@@ -192,48 +211,57 @@ function checkForMatch() {
 
 .hud {
   display: flex;
-  gap: 2rem;
+  align-items: center;
+  gap: 0.9rem;
   background: var(--color-surface);
   border-radius: var(--radius-lg);
-  padding: 0.75rem 2rem;
+  padding: 0.6rem 1.5rem;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-card);
+  font-size: 0.88rem;
 }
 
 .hud-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.1rem;
+  gap: 0.3rem;
 }
 
-.hud-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--color-text-muted);
-}
+.hud-key { color: var(--color-primary); }
 
-.hud-value {
-  font-size: 1.4rem;
+.hud-op { color: var(--color-text-muted); }
+
+.hud-val {
+  color: var(--color-warn);
   font-weight: 700;
-  color: var(--color-text);
+  min-width: 3ch;
 }
 
-.hud-value.urgent {
+.hud-val.urgent {
   color: var(--color-error);
   animation: pulse 0.6s ease-in-out infinite alternate;
+  text-shadow: 0 0 8px rgba(247, 118, 142, 0.6);
+}
+
+.hud-sep {
+  color: var(--color-text-muted);
+  opacity: 0.4;
+  font-size: 0.78rem;
 }
 
 @keyframes pulse {
-  from { opacity: 1; }
-  to   { opacity: 0.5; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.45;
+  }
 }
 
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(4, 120px);
-  gap: 1rem;
+  grid-template-columns: repeat(6, 100px);
+  gap: 0.85rem;
 }
 
 .loading-text {
@@ -241,10 +269,17 @@ function checkForMatch() {
   font-size: 1.1rem;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 700px) {
   .board-grid {
-    grid-template-columns: repeat(3, 90px);
-    gap: 0.75rem;
+    grid-template-columns: repeat(4, 80px);
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .board-grid {
+    grid-template-columns: repeat(3, 80px);
+    gap: 0.5rem;
   }
 
   .hud {
