@@ -17,29 +17,29 @@ function clampVolume(v) {
   return Math.min(100, Math.max(0, v))
 }
 
+const musicVolume = ref(readStoredVolume(STORAGE_KEYS.music))
+const sfxVolume = ref(readStoredVolume(STORAGE_KEYS.sfx))
+const masterVolume = ref(readStoredVolume(STORAGE_KEYS.master))
+
+function setMusicVolume(v) {
+  musicVolume.value = clampVolume(v)
+  localStorage.setItem(STORAGE_KEYS.music, String(musicVolume.value))
+}
+
+function setSfxVolume(v) {
+  sfxVolume.value = clampVolume(v)
+  localStorage.setItem(STORAGE_KEYS.sfx, String(sfxVolume.value))
+}
+
+function setMasterVolume(v) {
+  masterVolume.value = clampVolume(v)
+  localStorage.setItem(STORAGE_KEYS.master, String(masterVolume.value))
+}
+
+const effectiveMusicVolume = computed(() => (musicVolume.value / 100) * (masterVolume.value / 100))
+const effectiveSfxVolume = computed(() => (sfxVolume.value / 100) * (masterVolume.value / 100))
+
 export function useAudioSettings() {
-  const musicVolume = ref(readStoredVolume(STORAGE_KEYS.music))
-  const sfxVolume = ref(readStoredVolume(STORAGE_KEYS.sfx))
-  const masterVolume = ref(readStoredVolume(STORAGE_KEYS.master))
-
-  function setMusicVolume(v) {
-    musicVolume.value = clampVolume(v)
-    localStorage.setItem(STORAGE_KEYS.music, String(musicVolume.value))
-  }
-
-  function setSfxVolume(v) {
-    sfxVolume.value = clampVolume(v)
-    localStorage.setItem(STORAGE_KEYS.sfx, String(sfxVolume.value))
-  }
-
-  function setMasterVolume(v) {
-    masterVolume.value = clampVolume(v)
-    localStorage.setItem(STORAGE_KEYS.master, String(masterVolume.value))
-  }
-
-  const effectiveMusicVolume = computed(() => (musicVolume.value / 100) * (masterVolume.value / 100))
-  const effectiveSfxVolume = computed(() => (sfxVolume.value / 100) * (masterVolume.value / 100))
-
   return {
     musicVolume,
     sfxVolume,
