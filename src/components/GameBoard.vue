@@ -3,6 +3,13 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import MemoryCard from './MemoryCard.vue'
 import AudioPlayer from './AudioPlayer.vue'
 
+const props = defineProps({
+  levelConfig: {
+    type: Object,
+    required: true,
+  },
+})
+
 const emit = defineEmits(['end-game'])
 
 // ── Estado del juego ─────────────────────────────────────────
@@ -11,11 +18,13 @@ const flippedCards = ref([])
 const matchedPairs = ref(0)
 const totalPairs = ref(0)
 const score = ref(0)
-const timeLeft = ref(60)
+const timeLeft = ref(props.levelConfig.totalTime)
 const isChecking = ref(false)
 const isLoading = ref(true)
 const isPreviewing = ref(false)
 const previewCardId = ref(null)
+const failCount = ref(0)
+const FAIL_LIMIT = props.levelConfig.failLimit
 
 // ── Refs de audio ─────────────────────────────────────────────
 const audioCorrect = ref(null)
@@ -36,8 +45,8 @@ const soundPaths = ref({
 })
 
 // ── Preview previo al inicio ────────────────────────────────────
-const PREVIEW_DURATION = 3000
-const PREVIEW_FLASH_INTERVAL = 500
+const PREVIEW_DURATION = props.levelConfig.previewDuration
+const PREVIEW_FLASH_INTERVAL = props.levelConfig.previewFlashInterval
 let previewInterval = null
 
 function startPreview() {
@@ -61,7 +70,7 @@ function startPreview() {
 }
 
 // ── Timer ──────────────────────────────────────────────────────
-const TOTAL_TIME = 60
+const TOTAL_TIME = props.levelConfig.totalTime
 let timerInterval = null
 
 function startTimer() {
@@ -71,7 +80,7 @@ function startTimer() {
       clearInterval(timerInterval)
       audioTimer.value?.stop()
       audioTimeup.value?.play()
-      setTimeout(() => emit('end-game', score.value, TOTAL_TIME, false), 800)
+      setTimeout(() => emit('end-game', score.value, TOTAL_TIME, false, 'timeout'), 800)
     }
   }, 1000)
 }
@@ -90,7 +99,7 @@ onMounted(async () => {
     const res = await fetch('/data/cards.json')
     const data = await res.json()
     soundPaths.value = data.sounds
-    const selected = selectRandomPairs(data.pool, 12)
+    const selected = selectRandomPairs(data.pool, props.levelConfig.pairs)
     totalPairs.value = selected.length
     cards.value = shuffleCards(buildCardPairs(selected))
   } finally {
@@ -163,15 +172,24 @@ function checkForMatch() {
       audioTimer.value?.stop()
       audioWinning.value?.play()
       const timeTaken = TOTAL_TIME - timeLeft.value
-      setTimeout(() => emit('end-game', score.value, timeTaken, true), 800)
+      setTimeout(() => emit('end-game', score.value, timeTaken, true, 'win'), 800)
     }
   } else {
+    failCount.value++
     audioError.value?.play()
     setTimeout(() => {
       first.isFlipped = false
       second.isFlipped = false
       flippedCards.value = []
       isChecking.value = false
+
+      if (FAIL_LIMIT != null && failCount.value >= FAIL_LIMIT) {
+        clearInterval(timerInterval)
+        audioTimer.value?.stop()
+        audioTimeup.value?.play()
+        const timeTaken = TOTAL_TIME - timeLeft.value
+        setTimeout(() => emit('end-game', score.value, timeTaken, false, 'fails'), 800)
+      }
     }, 1000)
   }
 }
@@ -198,6 +216,14 @@ function checkForMatch() {
         <span class="hud-op">=</span>
         <span class="hud-val">{{ score }}</span>
       </div>
+      <template v-if="FAIL_LIMIT != null">
+        <span class="hud-sep">//</span>
+        <div class="hud-item">
+          <span class="hud-key">fallos</span>
+          <span class="hud-op">=</span>
+          <span class="hud-val" :class="{ urgent: failCount >= FAIL_LIMIT - 1 }">{{ failCount }}/{{ FAIL_LIMIT }}</span>
+        </div>
+      </template>
     </header>
 
     <header class="hud hud-preview" v-else>

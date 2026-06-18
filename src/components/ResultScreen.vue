@@ -1,10 +1,27 @@
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
   score: { type: Number, required: true },
   time:  { type: Number, required: true },
   won:   { type: Boolean, required: true },
+  reason: { type: String, default: 'timeout' },
+  levelIndex: { type: Number, default: 0 },
+  totalLevels: { type: Number, default: 1 },
 })
-const emit = defineEmits(['restart'])
+const emit = defineEmits(['restart', 'next-level'])
+
+const isLastLevel = computed(() => props.levelIndex === props.totalLevels - 1)
+
+const title = computed(() => {
+  if (props.won) return isLastLevel.value ? '¡Juego completado!' : '¡Lo lograste!'
+  return props.reason === 'fails' ? '¡Demasiados fallos!' : '¡Se acabó el tiempo!'
+})
+
+const exitCode = computed(() => {
+  if (props.won) return '0 (OK)'
+  return props.reason === 'fails' ? '1 (TOO_MANY_FAILS)' : '1 (TIMEOUT)'
+})
 </script>
 
 <template>
@@ -28,7 +45,7 @@ const emit = defineEmits(['restart'])
 
         <!-- Heading — solid color + text-shadow glow, no background-clip -->
         <h1 class="result-title" :class="won ? 'title-win' : 'title-lose'">
-          {{ won ? '¡Lo lograste!' : '¡Se acabó el tiempo!' }}
+          {{ title }}
         </h1>
 
         <!-- Terminal output block -->
@@ -36,7 +53,12 @@ const emit = defineEmits(['restart'])
           <p class="out-line">
             <span class="out-key">exit_code</span>
             <span class="out-op">:</span>
-            <span :class="won ? 'out-ok' : 'out-err'">{{ won ? '0 (OK)' : '1 (TIMEOUT)' }}</span>
+            <span :class="won ? 'out-ok' : 'out-err'">{{ exitCode }}</span>
+          </p>
+          <p class="out-line">
+            <span class="out-key">nivel&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            <span class="out-op">:</span>
+            <span class="out-val">{{ levelIndex + 1 }}/{{ totalLevels }}</span>
           </p>
           <p class="out-line" v-if="won">
             <span class="out-key">tiempo&nbsp;&nbsp;&nbsp;</span>
@@ -50,8 +72,16 @@ const emit = defineEmits(['restart'])
           </p>
         </div>
 
-        <button class="btn btn-primary result-btn" @click="emit('restart')">
+        <button
+          v-if="won && isLastLevel"
+          class="btn btn-primary result-btn"
+          @click="emit('restart')"
+        >
           <span class="prompt-green">$</span> run ./juego --restart
+        </button>
+
+        <button v-else class="btn btn-primary result-btn" @click="emit('next-level')">
+          <span class="prompt-green">$</span> run ./juego {{ won ? '--next-level' : '--retry' }}
         </button>
 
       </div>

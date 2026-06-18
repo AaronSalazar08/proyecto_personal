@@ -1,9 +1,18 @@
 <script setup>
-defineProps({
+const props = defineProps({
   gameTitle: { type: String, default: 'Juego de Memoria' },
   description: { type: String, default: 'Encuentra todos los pares' },
+  savedLevelIndex: { type: Number, default: 0 },
 })
 const emit = defineEmits(['start'])
+
+function startFromSaved() {
+  emit('start', props.savedLevelIndex)
+}
+
+function startFromBeginning() {
+  emit('start', 0)
+}
 </script>
 
 <template>
@@ -53,7 +62,16 @@ const emit = defineEmits(['start'])
           </p>
         </div>
 
-        <button class="btn btn-primary start-btn" @click="emit('start')">
+        <div class="start-actions" v-if="savedLevelIndex > 0">
+          <button class="btn btn-primary start-btn" @click="startFromSaved">
+            <span class="prompt-green">$</span> run ./juego --continue (nivel {{ savedLevelIndex + 1 }})
+          </button>
+          <button class="btn btn-secondary start-btn" @click="startFromBeginning">
+            <span class="prompt-green">$</span> run ./juego --restart
+          </button>
+        </div>
+
+        <button v-else class="btn btn-primary start-btn" @click="startFromBeginning">
           <span class="prompt-green">$</span> run ./juego
         </button>
 
@@ -188,11 +206,25 @@ const emit = defineEmits(['start'])
 .str{ color: var(--color-success); }
 
 /* Button */
+.start-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
 .start-btn {
   align-self: center;
   margin-top: 0.25rem;
   font-size: 1rem;
   padding: 0.7rem 2.5rem;
+}
+
+.start-actions .start-btn {
+  margin-top: 0;
+  font-size: 0.9rem;
+  padding: 0.65rem 2rem;
 }
 
 .prompt-green { color: var(--color-success); }
