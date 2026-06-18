@@ -5,6 +5,8 @@ import GameBoard from './components/GameBoard.vue'
 import ResultScreen from './components/ResultScreen.vue'
 import AudioPlayer from './components/AudioPlayer.vue'
 import { LEVELS } from './levels.js'
+import { useAudioSettings } from './composables/useAudioSettings.js'
+import { useScoreHistory } from './composables/useScoreHistory.js'
 
 const LEVEL_STORAGE_KEY = 'memoryGame.levelIndex'
 
@@ -36,6 +38,9 @@ const musicGame = ref(null)
 const musicWin = ref(null)
 const musicLose = ref(null)
 
+const { effectiveMusicVolume } = useAudioSettings()
+const { recordScore } = useScoreHistory()
+
 function onStart(startLevelIndex) {
   levelIndex.value = startLevelIndex
   persistLevelIndex(startLevelIndex)
@@ -50,6 +55,7 @@ function onEndGame(score, time, won, reason) {
   finalWon.value = won
   finalReason.value = reason
   finalLevelIndex.value = levelIndex.value
+  recordScore({ score, levelIndex: levelIndex.value, won })
   musicGame.value?.stop()
   currentScreen.value = 'result'
 
@@ -78,6 +84,11 @@ function onRestart() {
   finalWon.value = false
   currentScreen.value = 'start'
 }
+
+function onExitToMenu() {
+  musicGame.value?.stop()
+  currentScreen.value = 'start'
+}
 </script>
 
 <template>
@@ -94,6 +105,7 @@ function onRestart() {
       v-else-if="currentScreen === 'game'"
       :level-config="currentLevelConfig"
       @end-game="onEndGame"
+      @exit-to-menu="onExitToMenu"
     />
 
     <ResultScreen
@@ -109,9 +121,9 @@ function onRestart() {
     />
 
     <!-- Música de fondo: siempre montada para que los refs estén disponibles -->
-    <AudioPlayer ref="musicGame" src="/music/during_game.mp3" :loop="true" />
-    <AudioPlayer ref="musicWin"  src="/music/after_winning.mp3" :loop="true" />
-    <AudioPlayer ref="musicLose" src="/music/after_losing.mp3" :loop="true" />
+    <AudioPlayer ref="musicGame" src="/music/during_game.mp3" :loop="true" :volume="effectiveMusicVolume" />
+    <AudioPlayer ref="musicWin"  src="/music/after_winning.mp3" :loop="true" :volume="effectiveMusicVolume" />
+    <AudioPlayer ref="musicLose" src="/music/after_losing.mp3" :loop="true" :volume="effectiveMusicVolume" />
   </div>
 </template>
 
