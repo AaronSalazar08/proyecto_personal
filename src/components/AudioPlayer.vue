@@ -33,6 +33,13 @@ watch(
   { flush: 'post' },
 )
 
+watch(
+  () => props.volume,
+  (newVolume) => {
+    if (audioRef.value) audioRef.value.volume = newVolume
+  },
+)
+
 function play() {
   if (!audioRef.value || !props.src) return
   audioRef.value.volume = props.volume
