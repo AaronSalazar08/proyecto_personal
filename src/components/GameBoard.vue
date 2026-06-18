@@ -1,7 +1,9 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import MemoryCard from './MemoryCard.vue'
 import AudioPlayer from './AudioPlayer.vue'
+import SettingsPanel from './SettingsPanel.vue'
+import { useAudioSettings } from '../composables/useAudioSettings.js'
 
 const props = defineProps({
   levelConfig: {
@@ -10,10 +12,11 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['end-game'])
+const emit = defineEmits(['end-game', 'exit-to-menu'])
 
 // ── Estado del juego ─────────────────────────────────────────
 const cards = ref([])
+let lastLoadedPool = []
 const flippedCards = ref([])
 const matchedPairs = ref(0)
 const totalPairs = ref(0)
@@ -25,6 +28,9 @@ const isPreviewing = ref(false)
 const previewCardId = ref(null)
 const failCount = ref(0)
 const FAIL_LIMIT = props.levelConfig.failLimit
+
+const { effectiveSfxVolume } = useAudioSettings()
+const showSettings = ref(false)
 
 // ── Refs de audio ─────────────────────────────────────────────
 const audioCorrect = ref(null)
@@ -99,6 +105,7 @@ onMounted(async () => {
     const res = await fetch('/data/cards.json')
     const data = await res.json()
     soundPaths.value = data.sounds
+    lastLoadedPool = data.pool
     const selected = selectRandomPairs(data.pool, props.levelConfig.pairs)
     totalPairs.value = selected.length
     cards.value = shuffleCards(buildCardPairs(selected))
@@ -115,6 +122,58 @@ onUnmounted(() => {
   clearInterval(timerInterval)
   clearInterval(previewInterval)
 })
+
+function onKeydown(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault()
+    showSettings.value = !showSettings.value
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+
+watch(showSettings, (open) => {
+  if (open) {
+    clearInterval(timerInterval)
+    clearInterval(previewInterval)
+    audioTimer.value?.stop()
+  } else if (!isLoading.value && matchedPairs.value < totalPairs.value && timeLeft.value > 0) {
+    if (isPreviewing.value) {
+      startPreview()
+    } else {
+      startTimer()
+      audioTimer.value?.play()
+    }
+  }
+})
+
+function restartCurrentLevel() {
+  showSettings.value = false
+  clearInterval(timerInterval)
+  clearInterval(previewInterval)
+  audioTimer.value?.stop()
+
+  const selected = selectRandomPairs(lastLoadedPool, props.levelConfig.pairs)
+  totalPairs.value = selected.length
+  cards.value = shuffleCards(buildCardPairs(selected))
+  matchedPairs.value = 0
+  score.value = 0
+  failCount.value = 0
+  flippedCards.value = []
+  isChecking.value = false
+  timeLeft.value = props.levelConfig.totalTime
+
+  startPreview()
+}
+
+function exitToMenu() {
+  showSettings.value = false
+  clearInterval(timerInterval)
+  clearInterval(previewInterval)
+  audioTimer.value?.stop()
+  emit('exit-to-menu')
+}
 
 // ── Lógica de cartas ───────────────────────────────────────────
 function buildCardPairs(pairs) {
@@ -138,7 +197,7 @@ function selectRandomPairs(pool, count) {
 }
 
 function onCardFlip(card) {
-  if (isPreviewing.value || isChecking.value) return
+  if (isPreviewing.value || isChecking.value || showSettings.value) return
 
   const target = cards.value.find((c) => c.uniqueId === card.uniqueId)
   if (!target || target.isFlipped || target.isMatched) return
@@ -197,6 +256,8 @@ function checkForMatch() {
 
 <template>
   <div class="game-board">
+    <button class="settings-gear" @click="showSettings = true" aria-label="Abrir opciones">⚙</button>
+
     <!-- HUD -->
     <header class="hud" v-if="!isPreviewing">
       <div class="hud-item">
@@ -247,18 +308,27 @@ function checkForMatch() {
 
     <!-- Audio effects: siempre montados para que los refs estén disponibles inmediatamente.
          El src se actualiza reactivamente cuando carga el JSON. -->
-    <AudioPlayer ref="audioCorrect" :src="soundPaths.correct" />
-    <AudioPlayer ref="audioError" :src="soundPaths.error" />
-    <AudioPlayer ref="audioCardflip" :src="soundPaths.cardflip" />
-    <AudioPlayer ref="audioPoints" :src="soundPaths.points" />
-    <AudioPlayer ref="audioTimer" :src="soundPaths.timer" :loop="true" />
-    <AudioPlayer ref="audioTimeup" :src="soundPaths.timeup" />
-    <AudioPlayer ref="audioWinning" :src="soundPaths.winning" />
+    <AudioPlayer ref="audioCorrect" :src="soundPaths.correct" :volume="effectiveSfxVolume" />
+    <AudioPlayer ref="audioError" :src="soundPaths.error" :volume="effectiveSfxVolume" />
+    <AudioPlayer ref="audioCardflip" :src="soundPaths.cardflip" :volume="effectiveSfxVolume" />
+    <AudioPlayer ref="audioPoints" :src="soundPaths.points" :volume="effectiveSfxVolume" />
+    <AudioPlayer ref="audioTimer" :src="soundPaths.timer" :loop="true" :volume="effectiveSfxVolume" />
+    <AudioPlayer ref="audioTimeup" :src="soundPaths.timeup" :volume="effectiveSfxVolume" />
+    <AudioPlayer ref="audioWinning" :src="soundPaths.winning" :volume="effectiveSfxVolume" />
+
+    <SettingsPanel
+      v-if="showSettings"
+      :show-game-controls="true"
+      @close="showSettings = false"
+      @restart-level="restartCurrentLevel"
+      @go-to-menu="exitToMenu"
+    />
   </div>
 </template>
 
 <style scoped>
 .game-board {
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -266,6 +336,20 @@ function checkForMatch() {
   gap: 2rem;
   padding: 1.5rem 1rem;
 }
+
+.settings-gear {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.settings-gear:hover { color: var(--color-primary); }
 
 .hud {
   display: flex;
