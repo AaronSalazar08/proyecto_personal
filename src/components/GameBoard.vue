@@ -14,6 +14,8 @@ const score = ref(0)
 const timeLeft = ref(60)
 const isChecking = ref(false)
 const isLoading = ref(true)
+const isPreviewing = ref(false)
+const previewCardId = ref(null)
 
 // ── Refs de audio ─────────────────────────────────────────────
 const audioCorrect = ref(null)
@@ -32,6 +34,31 @@ const soundPaths = ref({
   cardflip: '',
   points: '',
 })
+
+// ── Preview previo al inicio ────────────────────────────────────
+const PREVIEW_DURATION = 3000
+const PREVIEW_FLASH_INTERVAL = 500
+let previewInterval = null
+
+function startPreview() {
+  const queue = shuffleCards(cards.value.map((c) => c.uniqueId))
+  const flashCount = Math.min(queue.length, PREVIEW_DURATION / PREVIEW_FLASH_INTERVAL)
+  isPreviewing.value = true
+
+  let i = 0
+  previewInterval = setInterval(() => {
+    if (i >= flashCount) {
+      clearInterval(previewInterval)
+      previewCardId.value = null
+      isPreviewing.value = false
+      startTimer()
+      audioTimer.value?.play()
+      return
+    }
+    previewCardId.value = queue[i]
+    i++
+  }, PREVIEW_FLASH_INTERVAL)
+}
 
 // ── Timer ──────────────────────────────────────────────────────
 const TOTAL_TIME = 60
@@ -68,16 +95,16 @@ onMounted(async () => {
     cards.value = shuffleCards(buildCardPairs(selected))
   } finally {
     isLoading.value = false
-    startTimer()
     // nextTick garantiza que el watch de AudioPlayer ya disparó .load()
     // antes de llamar .play(), evitando que el src aún esté vacío
     await nextTick()
-    audioTimer.value?.play()
+    startPreview()
   }
 })
 
 onUnmounted(() => {
   clearInterval(timerInterval)
+  clearInterval(previewInterval)
 })
 
 // ── Lógica de cartas ───────────────────────────────────────────
@@ -102,7 +129,7 @@ function selectRandomPairs(pool, count) {
 }
 
 function onCardFlip(card) {
-  if (isChecking.value) return
+  if (isPreviewing.value || isChecking.value) return
 
   const target = cards.value.find((c) => c.uniqueId === card.uniqueId)
   if (!target || target.isFlipped || target.isMatched) return
@@ -153,7 +180,7 @@ function checkForMatch() {
 <template>
   <div class="game-board">
     <!-- HUD -->
-    <header class="hud">
+    <header class="hud" v-if="!isPreviewing">
       <div class="hud-item">
         <span class="hud-key">tiempo</span>
         <span class="hud-op">=</span>
@@ -173,14 +200,19 @@ function checkForMatch() {
       </div>
     </header>
 
+    <header class="hud hud-preview" v-else>
+      <span class="hud-key">// memoriza...</span>
+    </header>
+
     <!-- Tablero -->
     <main class="board-grid" v-if="!isLoading">
       <MemoryCard
         v-for="card in cards"
         :key="card.uniqueId"
         :card="card"
-        :is-flipped="card.isFlipped"
+        :is-flipped="card.isFlipped || (isPreviewing && card.uniqueId === previewCardId)"
         :is-matched="card.isMatched"
+        :instant="isPreviewing"
         @flip="onCardFlip"
       />
     </main>
@@ -228,6 +260,11 @@ function checkForMatch() {
 }
 
 .hud-key { color: var(--color-primary); }
+
+.hud-preview {
+  justify-content: center;
+  font-size: 0.95rem;
+}
 
 .hud-op { color: var(--color-text-muted); }
 

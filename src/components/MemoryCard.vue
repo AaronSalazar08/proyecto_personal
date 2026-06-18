@@ -12,6 +12,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  instant: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['flip'])
@@ -26,7 +30,7 @@ function handleClick() {
 <template>
   <div
     class="card-wrapper"
-    :class="{ flipped: isFlipped || isMatched, matched: isMatched }"
+    :class="{ flipped: isFlipped || isMatched, matched: isMatched, instant }"
     @click="handleClick"
     role="button"
     :aria-label="`Carta ${card.label}`"
@@ -73,6 +77,10 @@ function handleClick() {
 
 .card-wrapper.flipped .card-inner {
   transform: rotateY(180deg);
+}
+
+.card-wrapper.instant .card-inner {
+  transition: none;
 }
 
 .card-back,
