@@ -1,10 +1,25 @@
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import SettingsPanel from './SettingsPanel.vue'
+
 const props = defineProps({
   gameTitle: { type: String, default: 'Juego de Memoria' },
   description: { type: String, default: 'Encuentra todos los pares' },
   savedLevelIndex: { type: Number, default: 0 },
 })
 const emit = defineEmits(['start'])
+
+const showSettings = ref(false)
+
+function onKeydown(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault()
+    showSettings.value = !showSettings.value
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 function startFromSaved() {
   emit('start', props.savedLevelIndex)
@@ -18,6 +33,7 @@ function startFromBeginning() {
 <template>
   <div class="screen start-screen">
     <div class="terminal-window">
+      <button class="settings-gear" @click="showSettings = true" aria-label="Abrir opciones">⚙</button>
 
       <!-- Window chrome -->
       <div class="titlebar">
@@ -77,6 +93,8 @@ function startFromBeginning() {
 
       </div>
     </div>
+
+    <SettingsPanel v-if="showSettings" :show-game-controls="false" @close="showSettings = false" />
   </div>
 </template>
 
@@ -85,6 +103,7 @@ function startFromBeginning() {
 
 /* ── Terminal window ───────────────────────────── */
 .terminal-window {
+  position: relative;
   max-width: 520px;
   width: 100%;
   background: var(--color-surface);
@@ -96,6 +115,20 @@ function startFromBeginning() {
     0 0 60px rgba(122, 162, 247, 0.1),
     var(--shadow-card);
 }
+
+.settings-gear {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.85rem;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.settings-gear:hover { color: var(--color-primary); }
 
 /* ── Titlebar ──────────────────────────────────── */
 .titlebar {
